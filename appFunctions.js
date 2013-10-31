@@ -119,7 +119,6 @@ function launch() {
         'terrainArray[1] =' + JSON.stringify(terrainArray[1]) + ';';
 
         return string;
-
       }
 
       jobs.run(RunString(), 1, dataArray, onError, onProgress, onResult, onFinished);
@@ -172,8 +171,7 @@ function launch() {
 
         console.log('the job finished in', realTime, 'it happened in', jobTime);
       }
-
-    });
+    });//CrowdProcess Connect End
 
     //Progress Bar function
     $(function () {
@@ -228,7 +226,6 @@ function launch() {
     // This function is quite efficient so don't be afraid to throw one away if you don't need both.
     return [x * c, y * c];
   }
-
 } //Launch
 
 
@@ -441,7 +438,6 @@ function visualize() {
   function toggleChart(chkbox) {
     surfacePlot.redraw();
   }
-
 }//Visualize
 
 function updateRange(){
@@ -450,7 +446,6 @@ function updateRange(){
   var rangeValue = document.getElementById('rangeValue1');
 
   rangeValue.setAttribute('value',formatFloat(slider.value, 0));
-
 }
 
 function showsEl(boxid) {
