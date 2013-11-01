@@ -60,6 +60,13 @@ function launch() {
   //storage for slope (entry 0) and aspect (entry 1)
   var terrainArray = [0, 0];
 
+  //corine fuel maps 321 value is burnable
+  var clcMap = new Array(ROWS*COLS);
+  for (var i = 0; i < clcMap.length; i++) {
+    clcMap[i] = 321;
+  }
+
+
   //String variable that holds program.min.js
   var programString;
 
@@ -93,85 +100,66 @@ function launch() {
     if (runnerCounter > 0)
       return;
 
+    document.querySelector('#progress h2').innerHTML = 'Monte Carlo Sample Simulations: ' + mcSamples;
 
-    CrowdProcessConnect(function (jobs) {
+    hidesEl('input');
+    showsEl('progress');
+
+    function Run(dataUnit){
+      var core = req('/home/fsousa/src/crp/embers/engine/src/program.js');
+
+      return core(dataUnit, ROWS, COLS, terrainArray[1], terrainArray[0], clcMap, 4000, 4000);
+    }
+
+    runner(Run, dataArray, onError, onProgress, onResult, onFinished);
+
+    function onError(error) {
+      console.error(error);
+    }
+
+    function onProgress(progress) {
+      //progressbar.progressbar("value", progress);
+    }
+
+    function onResult(result) {
+
+      resultsArray[resultsIdx] = JSON.parse(result);
+
+      ++resultsIdx;
+
+      console.log('Arrived result #',resultsIdx);
+    }
+
+    function onFinished(realTime, jobTime) {
+      //progressbar.progressbar("value", 100);
+
+      document.getElementById('realTime').innerHTML = 
+                'Wall time: '+ Math.round(realTime/1000).toString()+' s';
+
+      document.getElementById('cpTime').innerHTML = 
+                'Crowd Process time:'+Math.round(jobTime/1000).toString()+' s';
+
+      document.getElementById('SP').innerHTML = 'SpeedUp:'+Math.round(jobTime/realTime).toString();
 
 
-      document.querySelector('#progress h2').innerHTML = 'Monte Carlo Sample Simulations: ' + mcSamples;
+      document.getElementById('ppProg').innerHTML = 'Post Processing...';
 
-      hidesEl('input');
-      showsEl('progress');
+      for (var i = 0; i < ROWS * COLS; i++)
+        agvIgnMap[i] = 0;
 
-      function RunString(){
+      for (var n = 0; n < resultsIdx; n++) {
+        for (var i = 0; i < ROWS * COLS; i++) {
+          agvIgnMap[i] += resultsArray[n][i]/ resultsIdx;
 
-        function Run(dataUnit){ 
-          
-          var core = require(1);  
-
-          return core(dataUnit, ROWS, COLS, terrainArray[1], terrainArray[0]);
         }
-
-        var string = Run.toString() + ';' + programString + 
-        'var ROWS =' + ROWS.toString() + ';' + 
-        'var COLS =' + COLS.toString() + ';' + 
-        'var terrainArray = [];' + 
-        'terrainArray[0] =' + JSON.stringify(terrainArray[0]) + ';' + 
-        'terrainArray[1] =' + JSON.stringify(terrainArray[1]) + ';';
-
-        return string;
       }
+      
+      document.getElementById('ppProg').innerHTML = 'Post Processing...Done';
 
-      jobs.run(RunString(), 1, dataArray, onError, onProgress, onResult, onFinished);
+      showsEl('resultsButton');
 
-      function onError(error) {
-        console.error(error);
-      }
-
-      function onProgress(progress) {
-
-        progressbar.progressbar("value", progress);
-      }
-
-      function onResult(result) {
-
-        resultsArray[resultsIdx] = JSON.parse(result);
-
-        ++resultsIdx;
-
-        console.log('Arrived result #',resultsIdx);
-      }
-
-      function onFinished(realTime, jobTime) {
-        //progressbar.progressbar("value", 100);
-
-        document.getElementById('realTime').innerHTML = 
-                  'Wall time: '+ Math.round(realTime/1000).toString()+' s';
-
-        document.getElementById('cpTime').innerHTML = 
-                  'Crowd Process time:'+Math.round(jobTime/1000).toString()+' s';
-
-        document.getElementById('SP').innerHTML = 'SpeedUp:'+Math.round(jobTime/realTime).toString();
-
-
-        document.getElementById('ppProg').innerHTML = 'Post Processing...';
-
-        for (var i = 0; i < ROWS * COLS; i++)
-          agvIgnMap[i] = 0;
-
-        for (var n = 0; n < resultsIdx; n++) {
-          for (var i = 0; i < ROWS * COLS; i++) {
-            agvIgnMap[i] += resultsArray[n][i]/ resultsIdx;
-
-          }
-        }
-        
-        document.getElementById('ppProg').innerHTML = 'Post Processing...Done';
-
-        showsEl('resultsButton');
-
-        console.log('the job finished in', realTime, 'it happened in', jobTime);
-      }
-    });//CrowdProcess Connect End
+      console.log('the job finished in', realTime, 'it happened in', jobTime);
+    }
 
     //Progress Bar function
     $(function () {
@@ -539,8 +527,10 @@ function readGrassFile(data) {
 function arrayMax(array, maxIdx){
   var max = 0;
 
-  for (var i = 0; i < maxIdx; i++)
+  for (var i = 0; i < maxIdx; i++){
+    if (array[i] > 9999999999)
+      continue;
     max = (array[i] > max) ? array[i] : max;
-
+  }
   return max;
 }
